@@ -1,109 +1,90 @@
-var startBtn = document.getElementById('btn');
-var box = document.getElementById('box');
-var flagBox = document.getElementById('flagBox');
-var alertBox = document.getElementById('alertBox');
-var alertImg = document.getElementById('alertImg');
-var closeBtn = document.getElementById('close');
+var map = document.getElementById('map');
+var block = document.getElementsByClassName('block');
 var score = document.getElementById('score');
+var mine = document.getElementById('mine');
 var mineNum;
 var mineOver;
-var block;
 var mineMap = [];
-var startGame = true;
+var redFlag;
+var gameOverBool;
 
-var maxRow;
-var maxCow;
+init();
 
+map.oncontextmenu = function () {
+    return false;
+}
 
-bindEvent();
-
-function bindEvent() {
-    startBtn.onclick = function () {
-        if (startGame) {
-            box.style.display = 'block';
-            flagBox.display = 'block';
-            init();
-            startGame = false;
-        }
-        
-    }
-    box.oncontextmenu = function () {
-        return false;
-    }
-    box.onmousedown = function (e) {
-        var event = e.target;
-        if (e.which == 1) {
-            leftclick(event);
-        } else if (e.which == 3) {
-            rightclick(event);
-        }
-    }
-    closeBtn.onclick = function () {
-        startGame = true;
-        alertBox.style.display = 'none';
-        flagBox.style.display = 'none';
-        box.style.display = 'none';
-        box.innerHTML = '';
+map.onmousedown = function (e) {
+    var event = e.target;
+    if (e.which == 1) {
+        leftClick(event);
+    } else if (e.which == 3) {
+        rightClick(event);
     }
 }
 
 function init() {
+    gameOverBool = false;
+    map.innerHTML = '';
     mineNum = 10;
     mineOver = 10;
-    score.innerHTML = mineOver;
-
+    redFlag = 10;
     for (var i = 0; i < 10; i++) {
         for (var j = 0; j < 10; j++) {
             var con = document.createElement('div');
             con.classList.add('block');
             con.setAttribute('id', i + '-' + j);
-            box.appendChild(con);
+            map.appendChild(con);
             mineMap.push({ mine: 0 });
         }
     }
-    block = document.getElementsByClassName('block');
     while (mineNum) {
         var mineIndex = Math.floor(Math.random() * 100);
-        if (mineMap[mineIndex].mine === 0) {
-            block[mineIndex].classList.add('isLei');
+        if (mineMap[mineIndex].mine == 0) {
+            block[mineIndex].classList.add("isMine");
             mineMap[mineIndex].mine = 1;
             mineNum--;
         }
-
     }
-
 }
-
-function leftclick(dom) {
-    var isLei = document.getElementsByClassName('isLei');
-    if (dom && dom.classList.contains('isLei')) {
-        for (var i = 0; i < isLei.length; i++) {
-            isLei[i].classList.add('show');
+//鼠标左键事件
+function leftClick(dom) {
+    if (gameOverBool){
+        return ;
+    }
+    var isMine = document.getElementsByClassName("isMine");
+    if (dom.classList.contains("isMine")) {
+        for (var i = 0; i < isMine.length; i++) {
+            isMine[i].classList.add("show");
+            isMine[i].innerHTML = "雷";
         }
-        setTimeout(function () {
-
-
-            alertBox.style.display = 'block';
-            alertImg.style.background = 'url("img/over.png")';
-        }, 800)
+        over();
+        gameOverBool = true;
     } else {
         var n = 0;
         var posArr = dom && dom.getAttribute('id').split('-');
         var posX = posArr && +posArr[0];
         var posY = posArr && +posArr[1];
 
-        dom && dom.classList.add('num');
+        var block1 = document.getElementById(posX + "-" + posY);
+
+        if (block1.classList.contains('flag')) {
+            return;
+        }
+
+
+        dom.classList.add("num");
+
         for (var i = posX - 1; i <= posX + 1; i++) {
             for (var j = posY - 1; j <= posY + 1; j++) {
-                var s = i + '-' + j;
                 var aroundBox = document.getElementById(i + '-' + j);
-                if (aroundBox && aroundBox.classList.contains('isLei')) {
+                if (aroundBox && aroundBox.classList.contains('isMine')) {
                     n++;
                 }
             }
         }
-        dom && (dom.innerHTML = n);
 
+        dom.innerHTML = n;
 
         if (n == 0) {
             for (var i = posX - 1; i <= posX + 1; i++) {
@@ -112,7 +93,7 @@ function leftclick(dom) {
                     if (nearBox && nearBox.length != 0) {
                         if (!nearBox.classList.contains('check')) {
                             nearBox.classList.add('check');
-                            leftclick(nearBox);
+                            leftClick(nearBox);
                         }
                     }
                 }
@@ -121,20 +102,31 @@ function leftclick(dom) {
     }
 }
 
-function rightclick(dom) {
-    if (dom.classList.contains('num')) {
+function rightClick(dom) {
+    if (dom.classList.contains('num') || redFlag <= 0) {
         return;
     }
+    console.log("mineOver", mineOver);
     dom.classList.toggle('flag');
-    if (dom.classList.contains('isLei') && dom.classList.contains('flag')) {
-        mineOver--;
+
+    if (dom.classList.contains("flag")) {
+        redFlag--;
+        if (dom.classList.contains("isMine"))
+            mineOver--;
     }
-    if (dom.classList.contains('isLei') && !dom.classList.contains('flag')) {
-        mineOver++;
+
+    if (!dom.classList.contains("flag")) {
+        redFlag++;
+        if (dom.classList.contains("isMine"))
+            mineOver++;
     }
-    score.innerHTML = mineOver;
-    if (mineOver == 0) {
-        alertBox.style.display = 'block';
-        alertImg.style.background = 'url("img/success.png")';
-    }
+
+    score.innerHTML = redFlag;
+
+
 }
+
+function over() {
+    confirm("game over");
+}
+
